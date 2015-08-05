@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+	<script src="jquery-1.9.0.min.js" type="text/javascript"></script>
+</head>
+<body>
+	<iframe src="topFrame.htm" name="topFrame" marginWidth="0" height="30px" marginHeight="0" noResize="" scrolling="no" width="100%" frameborder="0">
+	</iframe>
+	<iframe  src="mainForm.htm" name="SFOMainFrame" width="100%" style="height: 500px;"  frameborder="0"></iframe>
+	<button id="FillPage">Fill page</button>
+	
+	<div>
+		<p>Changes log</p>
+		<p id="trackedChanges"></p>
+	</div>
+
+	<script type="text/javascript">
+		var items = {
+			InsuredName: 'Perfect customer',
+			DBA: 'PERF Co',
+			EffectiveDate: '05/05/2013',
+			YIB: '4',
+			Entity: 'corporation',
+			FEIN: '987654321',
+			Email: 'perfect@perfect.com',
+			ExpMod: '0.98', //could be empty
+			locations: [{
+				locNum: '1',
+				Street: '111 Main Str',
+				City: 'Los Angeles',
+				State: 'CA',
+				Zip: '90012 - 1234'
+			},
+			{
+				locNum: '2',
+				Street: '222 Main Str',
+				City: 'Los Angeles',
+				State: 'CA',
+				Zip: '90012'
+			},
+			{
+				locNum: '3',
+				Street: '333 Main Str',
+				City: 'Los Angeles',
+				State: 'CA',
+				Zip: '90012'
+			}
+			]
+		};
+
+		//------------------------------
+		//enter your code here
+		var changeFields = {};
+		var selectOpt;
+		var selRadio;
+		var expModField;
+		var frame = $('iframe:eq(1)');
+		$('#FillPage').click(function (){
+			createLocFields();
+			fillLocFields();
+			fillInsInfo();
+			fillSelOption();
+			getRadioCheck();
+			fillExpModField();
+			checkChangeValues();
+		});
+
+		function fillInsInfo() {
+			//Fill input fields according to values items
+			var elemText = frame.contents().find('input[type = "text"]');
+			elemText[0].value = items.InsuredName;
+			elemText[1].value = items.DBA;
+			elemText[2].value = items.EffectiveDate;
+			elemText[3].value = items.YIB;
+			elemText[4].value = items.FEIN;
+			elemText[5].value = items.Email;
+		}
+
+		function fillSelOption() {
+			//In the select field make the selected tab according to values items.Entity
+			var elemSelect = frame.contents().find('option');
+			elemSelect.each(function () {
+				if ((items.Entity).toLowerCase() == ($(this).text()).toLowerCase()) {
+					this.selected = true;
+					selectOpt = this;
+				}
+			});
+		}
+
+		function getRadioCheck() {
+			//Make input type="radio" Yes :checked
+			var elemRadio = frame.contents().find('input[type = "radio"]');
+			elemRadio[0].checked = true;
+			selRadio = elemRadio[0];
+		}
+
+		function fillExpModField() {
+			//Call the function to display field Experience Modification and assign value items.ExpMod
+			var elemCA;
+			if (1 > frame.contents().find('#ExpModPlaceholder input').length) {
+				window.frames[1].toggleExpMod();
+				elemCA = frame.contents().find('#ExperienceModificationCustCA');
+				elemCA[0].value = items.ExpMod;
+				expModField = elemCA[0];
+			} else if (1 == frame.contents().find('#ExpModPlaceholder input').length) {
+				elemCA = frame.contents().find('#ExperienceModificationCustCA');
+				elemCA[0].value = items.ExpMod;
+				expModField = elemCA[0];
+			}
+		}
+
+		function createLocFields() {
+			//Create a lines equal to the number address items.location
+			while (items.locations.length > frame.contents().find('#locationsTable tbody tr').length) {
+				window.frames[1].AddLocationRow();
+			}
+		}
+
+		function fillLocFields(){
+			//Fill in the appropriate values lines Location
+			frame.contents().find('#locationsTable tbody tr').each(function(num){
+				if(items.locations[num] != undefined){
+					$(this).find('input')[0].value = items.locations[num].locNum;
+					$(this).find('input')[1].value = items.locations[num].Street;
+					$(this).find('input')[2].value = items.locations[num].City;
+					$(this).find('input')[3].value = items.locations[num].State;
+					$(this).find('input')[4].value = items.locations[num].Zip.split('-')[0];
+					if($(this).find('input')[5].value = items.locations[num].Zip.split('-')[1] == undefined){
+						$(this).find('input')[5].value = '';
+					}else{
+						$(this).find('input')[5].value = items.locations[num].Zip.split('-')[1];
+					}
+				}
+			});
+		}
+
+		//Function search fields change
+		function checkChangeValues() {
+			checkInsInfo();
+			checkInsSelect();
+			checkRadioChange();
+			checkExpModInpChange();
+			initLocTableValues();
+			checkLocTable();
+		}
+		//Insured Information
+
+
+		function checkInsInfo() {
+			//Push the values in object
+			var elemIns = frame.contents().find('#InsuredInfo input');
+			elemIns.each(function () {
+				var saveInpVal = ($(this).parent().parent().find('label span:last("span")').text());
+				changeFields[saveInpVal] = this.value;
+			});
+
+			//Search change fields in Insured Information input[type="text"]
+
+			elemIns.change(function () {
+				var newInpVal = $(this).parent().parent().find('label span:last("span")').text();
+				if (changeFields[newInpVal] != this.value) {
+					var result = 'Field "' + newInpVal + '" was changed: Old value: ' + changeFields[newInpVal] +
+							'; New value: ' + this.value;
+					changeFields[newInpVal] = this.value;
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
+			});
+		}
+
+		function checkInsSelect() {
+			//Push option:selected in object
+			var elemSelect = frame.contents().find('#LegalEntity option');
+			var selFieldName = frame.contents().find('#LegalEntity_labelText').text();
+			changeFields[selFieldName] = $(selectOpt).text();
+
+			//Search change select option in Insured Information
+
+			var prevVal = $(elemSelect).parent().val();
+			$(elemSelect).parent().change(function(){
+				var newVal = $(this).val();
+				if(prevVal != newVal){
+					$(elemSelect).each(function(){
+						if($(this).val() == newVal){
+							console.log($(this).text());
+							if(changeFields[selFieldName] != $(this).text()){
+								var result = 'Field "' + selFieldName + '" was changed: Old value: ' +
+										changeFields[selFieldName] + '; New value: ' + $(this).text();
+								changeFields[selFieldName] = $(this).text();
+								var p = document.createElement('p');
+								var txt = document.createTextNode(result);
+								p.appendChild(txt);
+								$('#trackedChanges').prepend(p);
+							}
+						}
+					})
+				}
+			});
+		}
+
+		//Experience Modification
+
+		function checkRadioChange() {
+			//Push select radio button
+			var selRadioField = frame.contents().find('#ExpModCustCA_labelText').text();
+			changeFields[selRadioField] = $(selRadio).parent().text();
+
+			//Search change radio buttons
+			var selRadioButton = frame.contents().find('span[class = "options"] label input');
+			selRadioButton.click(function () {
+				if (changeFields[selRadioField] != $(this).parent().text()) {
+					var result = 'Field "' + selRadioField + '" was changed: Old value: ' + changeFields[selRadioField] +
+							'; New value: ' + $(this).parent().text();
+					changeFields[selRadioField] = $(this).parent().text();
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
+			});
+		}
+
+		function checkExpModInpChange() {
+			//Experience modification input field
+			var expModLabel = $(expModField).parent().parent().find('label span:last("span")').text();
+			changeFields[expModLabel] = $(expModField).val();
+
+			//Experience modification change field value
+			$(expModField).change(function () {
+				if (changeFields[expModLabel] != this.value) {
+					var result = 'Field "' + expModLabel + '" was changed: Old value: ' + changeFields[expModLabel] +
+							'; New value: ' + this.value;
+					changeFields[expModLabel] = this.value;
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
+			});
+		}
+
+	//Location table
+
+		//Push table values in object changeFields
+		function initLocTableValues() {
+			var elemTr = frame.contents().find('#locationsTable tbody tr');
+			var elemName = frame.contents().find('#locationsTable thead tr');
+			var arr = [];
+			$(elemTr).each(function () {
+				var obj = {};
+				obj[$(elemName).find('th:eq(0)').text()] = $(this).find('input:eq(0)').val();
+				obj[$(elemName).find('th:eq(1)').text()] = $(this).find('input:eq(1)').val();
+				obj[$(elemName).find('th:eq(2)').text()] = $(this).find('input:eq(2)').val();
+				obj[$(elemName).find('th:eq(3)').text()] = $(this).find('input:eq(3)').val();
+				if ($(this).find('input:eq(5)').val() == '') {
+					obj[$(elemName).find('th:eq(4)').text()] = $(this).find('input:eq(4)').val();
+				}else {
+					obj[$(elemName).find('th:eq(4)').text()] = $(this).find('input:eq(4)').val() + '-' +
+							$(this).find('input:eq(5)').val();
+				}
+				arr.push(obj);
+				changeFields.locations = arr;
+			});
+		}
+
+		//Search change in fields Location
+		function checkLocTable() {
+			var elemInput = frame.contents().find('#locationsTable tbody tr input');
+			$(elemInput).off('change').on('change', function() {
+				var elemName = frame.contents().find('#locationsTable thead tr');
+				var numTd = $(this).parents('tr').find('input').index(this);
+				var numTr = $(this).parents('tbody').find('tr').index($(this).parents('tr'));
+				var nameLoc = $((elemName).find('th')[numTd]).text();
+				var prevValue = changeFields.locations[numTr][nameLoc];
+				if (prevValue != $(this).val()) {
+						var result;
+						if(numTd == 5){
+							nameLoc = $((elemName).find('th')[numTd-1]).text();
+							changeFields.locations[numTr][nameLoc] = $($(this).parents('tr').find('input')[4]).val()+
+									'-' + $(this).val();
+							result = '"Locations" was changed: Loc #'+(numTr+1)+'; Field: '+ nameLoc +'; ' +
+									'Old value: '+ $($(this).parents('tr').find('input')[4]).val()+ ' - ' +
+									prevValue + '; New value: '+ $($(this).parents('tr').find('input')[4]).val()+
+									' - ' + $(this).val();
+							console.log(changeFields);
+						}else if(numTd == 4){
+							changeFields.locations[numTr][nameLoc] = $(this).val()+ ' - ' +
+									$($(this).parents('tr').find('input')[5]).val();
+							result = '"Locations" was changed: Loc #'+(numTr+1)+'; Field: '+ nameLoc +'; ' +
+									'Old value: '+prevValue+ ' - ' + $($(this).parents('tr').find('input')[5]).val()+
+									'; New value: '+ $(this).val() + ' - ' + $($(this).parents('tr').find('input')[5]).val();
+						}else{
+							changeFields.locations[numTr][nameLoc] = $(this).val();
+							result = '"Locations" was changed: Loc #'+(numTr+1)+'; Field: '+
+									nameLoc +'; ' + 'Old value: '+ prevValue+ '; New value: '+
+									$(this).val();
+						}
+						var p = document.createElement('p');
+						var txt = document.createTextNode(result);
+						p.appendChild(txt);
+						$('#trackedChanges').prepend(p);
+				}
+			});
+		}
+
+		//Search change in Experience Modification input field
+		$(function checkExpMod(){
+			$(frame).load(function(){
+				$(this).contents().find('.options input[value = "1"]').click(function(){
+					setTimeout(function(){
+						var inpField = $(frame).contents().find('#ExperienceModificationCustCA');
+						inpField.focus(function(){
+							expModField = this;
+							checkExpModInpChange();
+						})
+					},1100);
+				})
+			});
+		});
+	</script>
+</body>
+</html>
