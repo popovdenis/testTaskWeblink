@@ -97,15 +97,17 @@
 
 		function fillExpModField() {
 			//Call the function to display field Experience Modification and assign value items.ExpMod
-            var placeholder = frame.contents().find('#ExpModPlaceholder input');
-            if (placeholder.length) {
-                var elemCA = frame.contents().find('#ExperienceModificationCustCA');
-                elemCA[0].value = items.ExpMod;
-                expModField = elemCA[0];
-                if (placeholder.length > 1) {
-                    window.frames[1].toggleExpMod();
-                }
-            }
+			var elemCA;
+			if (1 > frame.contents().find('#ExpModPlaceholder input').length) {
+				window.frames[1].toggleExpMod();
+				elemCA = frame.contents().find('#ExperienceModificationCustCA');
+				elemCA[0].value = items.ExpMod;
+				expModField = elemCA[0];
+			} else if (1 == frame.contents().find('#ExpModPlaceholder input').length) {
+				elemCA = frame.contents().find('#ExperienceModificationCustCA');
+				elemCA[0].value = items.ExpMod;
+				expModField = elemCA[0];
+			}
 		}
 
 		function createLocFields() {
@@ -117,22 +119,18 @@
 
 		function fillLocFields(){
 			//Fill in the appropriate values lines Location
-            var inputs;
 			frame.contents().find('#locationsTable tbody tr').each(function(num){
 				if(items.locations[num] != undefined){
-                    var inputs = $(this).find('input');
-                    if (inputs.length >= 5) {
-                        inputs[0].value = items.locations[num].locNum;
-                        inputs[1].value = items.locations[num].Street;
-                        inputs[2].value = items.locations[num].City;
-                        inputs[3].value = items.locations[num].State;
-                        inputs[4].value = items.locations[num].Zip.split('-')[0];
-                        if(inputs[5].value = items.locations[num].Zip.split('-')[1] == undefined){
-                            inputs[5].value = '';
-                        } else {
-                            inputs[5].value = items.locations[num].Zip.split('-')[1];
-                        }
-                    }
+					$(this).find('input')[0].value = items.locations[num].locNum;
+					$(this).find('input')[1].value = items.locations[num].Street;
+					$(this).find('input')[2].value = items.locations[num].City;
+					$(this).find('input')[3].value = items.locations[num].State;
+					$(this).find('input')[4].value = items.locations[num].Zip.split('-')[0];
+					if($(this).find('input')[5].value = items.locations[num].Zip.split('-')[1] == undefined){
+						$(this).find('input')[5].value = '';
+					}else{
+						$(this).find('input')[5].value = items.locations[num].Zip.split('-')[1];
+					}
 				}
 			});
 		}
@@ -148,24 +146,28 @@
 		}
 		//Insured Information
 
-        function log(element, label) {
-            var value = element.is('input:radio') ? element.parent().text() : element.val();
-//            if (label != element.val()) {
-                var result = 'Field "' + label + '" was changed: Old value: ' + label +
-                        '; New value: ' + value;
-                var p = document.createElement('p');
-                var txt = document.createTextNode(result);
-                p.appendChild(txt);
-                $('#trackedChanges').prepend(p);
-//            }
-        }
 
 		function checkInsInfo() {
+			//Push the values in object
 			var elemIns = frame.contents().find('#InsuredInfo input');
+			elemIns.each(function () {
+				var saveInpVal = ($(this).parent().parent().find('label span:last("span")').text());
+				changeFields[saveInpVal] = this.value;
+			});
+
 			//Search change fields in Insured Information input[type="text"]
+
 			elemIns.change(function () {
-                var newInpVal = $(this).closest('div').find('label span:last("span")').text();
-                log($(this), newInpVal);
+				var newInpVal = $(this).parent().parent().find('label span:last("span")').text();
+				if (changeFields[newInpVal] != this.value) {
+					var result = 'Field "' + newInpVal + '" was changed: Old value: ' + changeFields[newInpVal] +
+							'; New value: ' + this.value;
+					changeFields[newInpVal] = this.value;
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
 			});
 		}
 
@@ -176,12 +178,14 @@
 			changeFields[selFieldName] = $(selectOpt).text();
 
 			//Search change select option in Insured Information
+
 			var prevVal = $(elemSelect).parent().val();
 			$(elemSelect).parent().change(function(){
 				var newVal = $(this).val();
 				if(prevVal != newVal){
 					$(elemSelect).each(function(){
 						if($(this).val() == newVal){
+							console.log($(this).text());
 							if(changeFields[selFieldName] != $(this).text()){
 								var result = 'Field "' + selFieldName + '" was changed: Old value: ' +
 										changeFields[selFieldName] + '; New value: ' + $(this).text();
@@ -200,19 +204,41 @@
 		//Experience Modification
 
 		function checkRadioChange() {
+			//Push select radio button
 			var selRadioField = frame.contents().find('#ExpModCustCA_labelText').text();
+			changeFields[selRadioField] = $(selRadio).parent().text();
+
 			//Search change radio buttons
 			var selRadioButton = frame.contents().find('span[class = "options"] label input');
 			selRadioButton.click(function () {
-                log($(this), selRadioField);
+				if (changeFields[selRadioField] != $(this).parent().text()) {
+					var result = 'Field "' + selRadioField + '" was changed: Old value: ' + changeFields[selRadioField] +
+							'; New value: ' + $(this).parent().text();
+					changeFields[selRadioField] = $(this).parent().text();
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
 			});
 		}
 
 		function checkExpModInpChange() {
+			//Experience modification input field
+			var expModLabel = $(expModField).parent().parent().find('label span:last("span")').text();
+			changeFields[expModLabel] = $(expModField).val();
+
 			//Experience modification change field value
 			$(expModField).change(function () {
-                var newInpVal = $(this).closest('div').find('label span:last("span")').text();
-                log($(this), newInpVal);
+				if (changeFields[expModLabel] != this.value) {
+					var result = 'Field "' + expModLabel + '" was changed: Old value: ' + changeFields[expModLabel] +
+							'; New value: ' + this.value;
+					changeFields[expModLabel] = this.value;
+					var p = document.createElement('p');
+					var txt = document.createTextNode(result);
+					p.appendChild(txt);
+					$('#trackedChanges').prepend(p);
+				}
 			});
 		}
 
